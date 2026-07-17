@@ -1,31 +1,29 @@
-# Getting Started with Chat App
+# Chat App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A small React chat client (bootstrapped with [Create React App](https://github.com/facebook/create-react-app))
+plus an Express server that proxies streaming completions to the OpenAI API.
+
+## Setup
+
+`npm install` — installs all NPM packages.
 
 ## Available Scripts
 
-In the project directory, you can run:
-
-### `npm install`
-
-Installs all the NPM packages.
-
 ### `npm start`
 
-Runs the client app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Runs the client app in development mode at [http://localhost:3000](http://localhost:3000).\
+The page reloads on edits, and lint errors show in the console.
 
 ### `npm run server`
 
-Runs the server in the development mode.\
-Open [http://localhost:8080/health](http://localhost:8080/health) to view its status.
+Runs the Express server in development mode; it auto-restarts on changes under `server/`.\
+Health check: [http://localhost:8080/health](http://localhost:8080/health).
 
-The page will reload if you make edits.\
+### `npm run build`
+
+Builds the client app for production into the `build/` folder.
 
 ### `npm test`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Launches the test runner in interactive watch mode.\
+See [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
