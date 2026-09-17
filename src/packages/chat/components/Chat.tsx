@@ -7,7 +7,7 @@ import isContentPartImage from '../util/isContentPartImage';
 import isHotkey from 'is-hotkey';
 import Markdown from 'react-markdown';
 import React, { useEffect, useRef, useState } from 'react';
-import SendOutlined from '@ant-design/icons/SendOutlined';
+import { SendOutlined } from '@ant-design/icons';
 import styles from './Chat.module.css';
 import WaitingAnimation from './WaitingAnimation';
 import { Button, Card, Input } from 'antd';
