@@ -29,26 +29,37 @@ interface MessageInput {
 }
 
 class ChatStore {
-  @observable submittingPrompt = false;
-  @observable retryAttempts = 0;
-  @observable model = OpenAiModel.GptTurbo;
-  @observable narrativeText = '';
-  @observable narrativeRetryAttempts = 0;
-  @observable generatingNarrative = false;
+  submittingPrompt = false;
+  retryAttempts = 0;
+  model = OpenAiModel.GptTurbo;
+  narrativeText = '';
+  narrativeRetryAttempts = 0;
+  generatingNarrative = false;
 
   messages = observable.array<Message>();
   imageUrls = observable.array<ImageUrl>();
 
-  @computed
   get isAwaitingChatResponse() {
     return this.submittingPrompt && !this.messages[this.messages.length - 1]?.content;
   }
 
   constructor(private rootStore: RootStore) {
-    makeObservable(this);
+    makeObservable(this, {
+      submittingPrompt: observable,
+      retryAttempts: observable,
+      model: observable,
+      narrativeText: observable,
+      narrativeRetryAttempts: observable,
+      generatingNarrative: observable,
+      isAwaitingChatResponse: computed,
+      submitChatPrompt: action,
+      addImageUrl: action,
+      clearImageUrls: action,
+      resetChatPrompt: action,
+      clearStore: action,
+    });
   }
 
-  @action
   async submitChatPrompt(prompt: string, imageUrls: ImageUrl[] = []) {
     this.submittingPrompt = true;
 
@@ -189,17 +200,14 @@ class ChatStore {
     return '';
   }
 
-  @action
   addImageUrl(imageUrl: ImageUrl) {
     this.imageUrls.push(imageUrl);
   }
 
-  @action
   clearImageUrls() {
     this.imageUrls.clear();
   }
 
-  @action
   resetChatPrompt() {
     this.submittingPrompt = false;
     this.imageUrls.clear();
@@ -212,7 +220,6 @@ class ChatStore {
     ]);
   }
 
-  @action
   clearStore() {
     this.submittingPrompt = false;
 
