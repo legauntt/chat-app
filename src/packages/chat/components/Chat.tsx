@@ -1,5 +1,3 @@
-import Button from 'antd/es/button/button';
-import Card from 'antd/es/card';
 import ChatWriter from './ChatWriter';
 import ContentPartImage from '../schema/ContentPartImage';
 import ContentPartText from '../schema/ContentPartText';
@@ -11,11 +9,13 @@ import Markdown from 'react-markdown';
 import React, { useEffect, useRef, useState } from 'react';
 import SendOutlined from '@ant-design/icons/SendOutlined';
 import styles from './Chat.module.css';
-import TextArea from 'antd/es/input/TextArea';
 import WaitingAnimation from './WaitingAnimation';
+import { Button, Card, Input } from 'antd';
 import { observer } from 'mobx-react';
 import { useStores } from '../../../hooks/use-stores';
 import { v4 as uuidv4 } from 'uuid';
+
+const { TextArea } = Input;
 
 const Chat: React.FC = () => {
   const { chatStore } = useStores();

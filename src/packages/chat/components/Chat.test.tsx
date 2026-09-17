@@ -9,10 +9,6 @@ vi.mock('@microsoft/fetch-event-source', () => ({
   fetchEventSource: vi.fn(() => new Promise(() => {})),
 }));
 
-vi.mock('antd/lib/message', () => ({
-  default: { error: vi.fn() },
-}));
-
 const renderChat = () => {
   createStoreContext();
   const StoreContext = getStoreContext();

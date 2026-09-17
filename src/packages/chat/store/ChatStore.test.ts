@@ -8,8 +8,8 @@ vi.mock('@microsoft/fetch-event-source', () => ({
   fetchEventSource: vi.fn(),
 }));
 
-vi.mock('antd/lib/message', () => ({
-  default: { error: vi.fn() },
+vi.mock('antd', () => ({
+  message: { error: vi.fn() },
 }));
 
 const openResponse = (contentType = 'text/event-stream', status = 200) => ({
@@ -64,7 +64,7 @@ describe('ChatStore', () => {
   });
 
   it('surfaces a FatalError from a non-retriable open response and stops submission', async () => {
-    const antmessage = (await import('antd/lib/message')).default;
+    const { message: antmessage } = await import('antd');
 
     vi.mocked(fetchEventSource).mockImplementation(async (_url, opts: any) => {
       await opts.onopen(openResponse('application/json', 400));
@@ -77,7 +77,7 @@ describe('ChatStore', () => {
   });
 
   it('gives up after MAX_ATTEMPTS retriable errors and stops submission', async () => {
-    const antmessage = (await import('antd/lib/message')).default;
+    const { message: antmessage } = await import('antd');
 
     vi.mocked(fetchEventSource).mockImplementation(async (_url, opts: any) => {
       for (let i = 0; i < 6; i++) {

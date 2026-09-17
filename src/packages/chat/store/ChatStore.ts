@@ -1,4 +1,3 @@
-import antmessage from 'antd/lib/message';
 import dayjs from 'dayjs';
 import FatalError from '../errors/FatalError';
 import Message from '../schema/Message';
@@ -7,6 +6,7 @@ import RetriableError from '../errors/RetriableError';
 import RootStore from '../../app/store/RootStore';
 import { action, computed, makeObservable, observable, runInAction } from 'mobx';
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
+import { message as antmessage } from 'antd';
 
 const INITIAL_RETRY_INTERVAL = 4000;
 const MAX_RETRY_INTERVAL = 16000;

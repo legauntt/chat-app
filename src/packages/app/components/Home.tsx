@@ -1,4 +1,4 @@
-import Button from 'antd/es/button/button';
+import { Button } from 'antd';
 import React from 'react';
 import styles from './Home.module.css';
 import { createStoreContext } from '../../../contexts/StoreContext';
