@@ -1,7 +1,7 @@
 import Chat from './Chat';
-import Layout from 'antd/es/layout';
 import React from 'react';
 import styles from './ChatContainer.module.css';
+import { Layout } from 'antd';
 import { observer } from 'mobx-react';
 
 const ChatContainer: React.FC = () => {

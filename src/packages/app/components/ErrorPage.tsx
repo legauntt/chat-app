@@ -1,6 +1,7 @@
-import Paragraph from 'antd/es/typography/Paragraph';
 import React from 'react';
-import Title from 'antd/es/typography/Title';
+import { Typography } from 'antd';
+
+const { Paragraph, Title } = Typography;
 
 const ErrorPage: React.FC = () => {
   return (
