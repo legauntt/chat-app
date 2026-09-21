@@ -2,7 +2,6 @@ import Chat from './Chat';
 import React from 'react';
 import styles from './ChatContainer.module.css';
 import { Layout } from 'antd';
-import { observer } from 'mobx-react';
 
 const ChatContainer: React.FC = () => {
   return (
@@ -16,4 +15,4 @@ const ChatContainer: React.FC = () => {
   );
 };
 
-export default observer(ChatContainer);
+export default ChatContainer;

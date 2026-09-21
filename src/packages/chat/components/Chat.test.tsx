@@ -1,30 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fetchEventSource } from '@microsoft/fetch-event-source';
 import Chat from './Chat';
-import RootStore from '../../app/store/RootStore';
-import { createStoreContext, getStoreContext } from '../../../contexts/StoreContext';
 
 vi.mock('@microsoft/fetch-event-source', () => ({
   EventStreamContentType: 'text/event-stream',
-  fetchEventSource: vi.fn(() => new Promise(() => {})),
+  fetchEventSource: vi.fn(
+    (_url, options) =>
+      new Promise<void>((resolve) => {
+        options.signal.addEventListener('abort', () => resolve(), { once: true });
+      })
+  ),
 }));
-
-const renderChat = () => {
-  createStoreContext();
-  const StoreContext = getStoreContext();
-  const rootStore = new RootStore();
-
-  render(
-    <StoreContext.Provider value={rootStore}>
-      <Chat />
-    </StoreContext.Provider>
-  );
-
-  return rootStore;
-};
 
 describe('Chat', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     if (!('ResizeObserver' in globalThis)) {
       (globalThis as any).ResizeObserver = class {
         observe() {}
@@ -35,15 +26,14 @@ describe('Chat', () => {
   });
 
   it('renders the greeting message and a disabled send button until there is input', () => {
-    renderChat();
+    render(<Chat />);
 
     expect(screen.getByText(/how can i help you/i)).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
   });
 
-  it('enables send once text is entered and submits it through the chat store', () => {
-    const rootStore = renderChat();
-    const submitSpy = vi.spyOn(rootStore.chatStore, 'submitChatPrompt');
+  it('sends the prompt, clears the composer, and renders the completed reply', async () => {
+    render(<Chat />);
 
     const textbox = screen.getByPlaceholderText('Send a message');
     fireEvent.change(textbox, { target: { value: 'Hello, testing the upgrade' } });
@@ -53,9 +43,22 @@ describe('Chat', () => {
 
     fireEvent.click(sendButton);
 
-    expect(submitSpy).toHaveBeenCalledTimes(1);
-    expect(submitSpy.mock.calls[0][0]).toBe('Hello, testing the upgrade');
-    expect(submitSpy.mock.calls[0][1]).toHaveLength(0);
+    expect(fetchEventSource).toHaveBeenCalledTimes(1);
+    const options = vi.mocked(fetchEventSource).mock.calls[0][1];
+    expect(JSON.parse(options.body as string).messages.at(-1)).toEqual({
+      role: 'user',
+      content: 'Hello, testing the upgrade',
+    });
     expect(textbox).toHaveValue('');
+    expect(screen.getByText('Hello, testing the upgrade')).toBeInTheDocument();
+    await act(async () => {
+      options.onmessage!({
+        id: '',
+        event: 'message',
+        data: JSON.stringify({ text: 'A streamed reply', success: true }),
+      });
+    });
+    expect(screen.getByText('A streamed reply')).toBeInTheDocument();
+    expect(screen.getByRole('button')).toBeDisabled();
   });
 });
