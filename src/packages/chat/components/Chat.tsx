@@ -11,23 +11,18 @@ import { SendOutlined } from '@ant-design/icons';
 import styles from './Chat.module.css';
 import WaitingAnimation from './WaitingAnimation';
 import { Button, Card, Input } from 'antd';
-import { observer } from 'mobx-react';
-import { useStores } from '../../../hooks/use-stores';
+import useChat from '../hooks/use-chat';
 import { v4 as uuidv4 } from 'uuid';
 
 const { TextArea } = Input;
 
 const Chat: React.FC = () => {
-  const { chatStore } = useStores();
+  const chat = useChat();
 
   const [prompt, setPrompt] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
 
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatStore.resetChatPrompt();
-  }, [chatStore]);
 
   useEffect(() => {
     const chatElement = ref.current as HTMLDivElement;
@@ -53,15 +48,15 @@ const Chat: React.FC = () => {
     if (autoScroll && ref.current) {
       ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [autoScroll, chatStore.submittingPrompt]);
+  }, [autoScroll, chat.submittingPrompt]);
 
-  const cards = chatStore.messages.map((message, i) => {
+  const cards = chat.messages.map((message, i) => {
     if (
       message.role === 'assistant' &&
-      chatStore.submittingPrompt &&
-      i === chatStore.messages.length - 1
+      chat.submittingPrompt &&
+      i === chat.messages.length - 1
     ) {
-      if (!chatStore.isAwaitingChatResponse) {
+      if (!chat.isAwaitingChatResponse) {
         return (
           <Card className={cx(styles.card, styles.left)} key={i}>
             <ChatWriter text={message.content as string} />
@@ -111,7 +106,7 @@ const Chat: React.FC = () => {
         const blob = item.getAsFile();
         const reader = new FileReader();
         reader.onload = (event) => {
-          chatStore.addImageUrl({
+          chat.addImageUrl({
             id: uuidv4(),
             url: event.target?.result as string,
           });
@@ -122,11 +117,11 @@ const Chat: React.FC = () => {
   };
 
   const handleSubmitPrompt = () => {
-    if (!prompt?.length || chatStore.submittingPrompt) {
+    if (!prompt?.length || chat.submittingPrompt) {
       return;
     }
-    chatStore.submitChatPrompt(prompt, chatStore.imageUrls);
-    chatStore.clearImageUrls();
+    chat.submitChatPrompt(prompt, chat.imageUrls);
+    chat.clearImageUrls();
     setPrompt('');
   };
 
@@ -137,9 +132,9 @@ const Chat: React.FC = () => {
       </div>
       <div className={styles.bottomPane}>
         <div className={styles.promptContainer}>
-          {chatStore.imageUrls.length > 0 && (
+          {chat.imageUrls.length > 0 && (
             <div className={styles.imagePreviewContainer}>
-              {chatStore.imageUrls.map(({ id, url }, i) => (
+              {chat.imageUrls.map(({ id, url }, i) => (
                 <div key={id} className={styles.imagePreview}>
                   <img src={url} alt="Uploaded File" />
                 </div>
@@ -168,7 +163,7 @@ const Chat: React.FC = () => {
               }}
             />
             <div className={styles.sendBtn}>
-              {chatStore.submittingPrompt ? (
+              {chat.submittingPrompt ? (
                 <WaitingAnimation />
               ) : (
                 <Button
@@ -185,4 +180,4 @@ const Chat: React.FC = () => {
   );
 };
 
-export default observer(Chat);
+export default Chat;

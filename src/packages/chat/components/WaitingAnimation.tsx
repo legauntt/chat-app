@@ -1,6 +1,5 @@
 import React from 'react';
 import styles from './WaitingAnimation.module.css';
-import { observer } from 'mobx-react';
 
 const WaitingAnimation: React.FC = () => {
   return (
@@ -12,4 +11,4 @@ const WaitingAnimation: React.FC = () => {
   );
 };
 
-export default observer(WaitingAnimation);
+export default WaitingAnimation;

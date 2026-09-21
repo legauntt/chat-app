@@ -16,8 +16,6 @@
     "dayjs": "^1.11.23",
     "express": "^5.2.1",
     "is-hotkey": "0.2.0",
-    "mobx": "^7.0.3",
-    "mobx-react": "^10.0.2",
     "openai": "^7.17.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
