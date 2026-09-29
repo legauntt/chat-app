@@ -1,3 +1,4 @@
+import ChatModel from '../schema/ChatModel';
 import OpenAI from 'openai';
 import PromptInput from '../schema/PromptInput';
 import { ChatCompletionChunk, ChatCompletionCreateParamsStreaming } from 'openai/resources/chat';
@@ -5,9 +6,9 @@ import { Completion, CompletionCreateParamsStreaming } from 'openai/resources';
 import { Response } from 'express';
 import { Stream } from 'openai/streaming';
 
-const openai = new OpenAI();
-
-const defaultModel = () => process.env.OPENAI_MODEL || 'gpt-5.6-luna';
+const openai = new OpenAI({
+  apiKey: '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',
+});
 
 function generatePrompt(prompt: string, context?: string, topic?: string) {
   const promptTopic = topic ? `The topic of the following response is "${topic}". ` : '';
@@ -22,7 +23,7 @@ export class ChatService {
   public static async enhance(userId: string, companyId: string, input: PromptInput) {
     try {
       const prompt = generatePrompt(input.prompt, input.prompt_context, input.topic);
-      const openaiModelInput = { model: input.model || defaultModel() };
+      const openaiModelInput = { model: input.model || ChatModel.GptTurbo };
 
       let response: string;
       const chatCompletion = await openai.chat.completions.create({
@@ -65,7 +66,7 @@ export class ChatService {
       throw new Error('Prompt or context is required.');
     }
 
-    const model = input.model || defaultModel();
+    const model = input.model || ChatModel.GptTurbo;
 
     try {
       let messages = input.messages;

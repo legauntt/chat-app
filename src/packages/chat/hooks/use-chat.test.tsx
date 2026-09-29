@@ -146,7 +146,7 @@ describe('useChat', () => {
       })
     );
     const body = JSON.parse(latestRequest().body as string);
-    expect(body).not.toHaveProperty('model');
+    expect(body.model).toBe('gpt-4-vision-preview');
     expect(body.messages).toEqual([
       {
         role: 'system',

@@ -110,7 +110,7 @@ export default function useChat() {
           Accept: 'text/event-stream',
         },
         openWhenHidden: true,
-        body: JSON.stringify({ messages: messagesInput }),
+        body: JSON.stringify({ model: 'gpt-4-vision-preview', messages: messagesInput }),
         onopen: async (response) => {
           if (!isActive()) return;
           if (response.ok && response.headers.get('content-type') === EventStreamContentType) {

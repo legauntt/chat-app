@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Response } from 'express';
 import { ChatService } from './chat.service';
 import ChatModel from '../schema/ChatModel';
@@ -27,10 +27,7 @@ vi.mock('openai', () => {
 
 beforeEach(() => {
   mockCreate.mockReset();
-  vi.stubEnv('OPENAI_MODEL', '');
 });
-
-afterEach(() => vi.unstubAllEnvs());
 
 describe('ChatService.enhance', () => {
   it('returns the model response text on success', async () => {
@@ -63,18 +60,18 @@ describe('ChatService.enhance', () => {
     expect(result.text).toBe('Unable to generate AI assisted paragraph.');
   });
 
-  it('lets the API validate context length for a configured model', async () => {
+  it('lets the API validate context length for the requested model', async () => {
     const hugePrompt = 'word '.repeat(20000);
-    vi.stubEnv('OPENAI_MODEL', 'gpt-5.6-luna');
     mockCreate.mockResolvedValue({ choices: [{ message: { content: 'A summary' } }] });
 
     const result = await ChatService.enhance('user-1', 'company-1', {
       prompt: hugePrompt,
+      model: ChatModel.Gpt4Vision,
     });
 
     expect(result.text).toBe('A summary');
     expect(mockCreate).toHaveBeenCalledWith({
-      model: 'gpt-5.6-luna',
+      model: ChatModel.Gpt4Vision,
       messages: [{ role: 'user', content: expect.stringContaining(hugePrompt) }],
     });
   });
@@ -87,7 +84,7 @@ describe('ChatService.invokeCompletionRequest', () => {
     end: vi.fn(),
   });
 
-  it('uses the server default and emits the text events consumed by the chat client', async () => {
+  it('preserves the client model and emits the text events consumed by the chat client', async () => {
     const res = response();
     const messages = [{ role: 'user', content: [
       { type: 'text', text: 'Describe this' },
@@ -100,9 +97,11 @@ describe('ChatService.invokeCompletionRequest', () => {
       yield { choices: [{ delta: {}, finish_reason: 'stop' }] };
     })());
 
-    await ChatService.invokeCompletionRequest(res as unknown as Response, { prompt: '', messages });
+    await ChatService.invokeCompletionRequest(res as unknown as Response, {
+      prompt: '', messages, model: ChatModel.Gpt4Vision,
+    });
 
-    expect(mockCreate).toHaveBeenCalledWith({ model: 'gpt-5.6-luna', messages, stream: true });
+    expect(mockCreate).toHaveBeenCalledWith({ model: ChatModel.Gpt4Vision, messages, stream: true });
     expect(res.sse.push.mock.calls).toEqual([
       [{ text: 'A ' }], [{ text: 'picture' }], [{ success: true }],
     ]);
@@ -110,7 +109,6 @@ describe('ChatService.invokeCompletionRequest', () => {
 
   it.each([undefined, 'gpt-4'])('preserves explicit models and function parameters (%s)', async (model) => {
     const res = response();
-    vi.stubEnv('OPENAI_MODEL', 'gpt-5.6-sol');
     const functions = [{ name: 'answer', parameters: { type: 'object', properties: {} } }];
     mockCreate.mockResolvedValue((async function* () {
       yield { choices: [{ delta: { function_call: { arguments: '{}' } } }] };
@@ -121,7 +119,7 @@ describe('ChatService.invokeCompletionRequest', () => {
     });
 
     expect(mockCreate).toHaveBeenCalledWith({
-      model: model || 'gpt-5.6-sol',
+      model: model || ChatModel.GptTurbo,
       messages: [{ role: 'user', content: expect.stringContaining('Answer') }],
       functions, function_call: 'auto', stream: true,
     });
