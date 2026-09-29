@@ -84,7 +84,7 @@ describe('ChatService.invokeCompletionRequest', () => {
     end: vi.fn(),
   });
 
-  it('preserves the client model and emits the text events consumed by the chat client', async () => {
+  it('preserves the client model and streams completion events', async () => {
     const res = response();
     const messages = [{ role: 'user', content: [
       { type: 'text', text: 'Describe this' },
@@ -103,7 +103,7 @@ describe('ChatService.invokeCompletionRequest', () => {
 
     expect(mockCreate).toHaveBeenCalledWith({ model: ChatModel.Gpt4Vision, messages, stream: true });
     expect(res.sse.push.mock.calls).toEqual([
-      [{ text: 'A ' }], [{ text: 'picture' }], [{ success: true }],
+      [{ token: 'A ' }], [{ token: 'picture' }], [{ success: true }],
     ]);
   });
 
@@ -123,7 +123,7 @@ describe('ChatService.invokeCompletionRequest', () => {
       messages: [{ role: 'user', content: expect.stringContaining('Answer') }],
       functions, function_call: 'auto', stream: true,
     });
-    expect(res.sse.push.mock.calls).toEqual([[{ text: '{}' }], [{ success: true }]]);
+    expect(res.sse.push.mock.calls).toEqual([[{ token: '{}' }], [{ success: true }]]);
   });
 
   it.each([400, 401, 429, 500])('forwards API error %i without reporting success', async (status) => {
