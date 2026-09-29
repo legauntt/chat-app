@@ -26,14 +26,16 @@ interface MessageInput {
   content: Message['content'];
 }
 
+const initialMessages = (): Message[] => [
+  {
+    date: dayjs(),
+    role: 'assistant',
+    content: 'Hello! I can answer any questions you have. How can I help you?',
+  },
+];
+
 export default function useChat() {
-  const [messages, setMessages] = useState<Message[]>(() => [
-    {
-      date: dayjs(),
-      role: 'assistant',
-      content: 'Hello! I can answer any questions you have. How can I help you?',
-    },
-  ]);
+  const [messages, setMessages] = useState(initialMessages);
   const [imageUrls, setImageUrls] = useState<ImageUrl[]>([]);
   const [submittingPrompt, setSubmittingPrompt] = useState(false);
   const activeRequest = useRef<AbortController | null>(null);
@@ -45,6 +47,14 @@ export default function useChat() {
     },
     []
   );
+
+  function reset() {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
+    setMessages(initialMessages());
+    setImageUrls([]);
+    setSubmittingPrompt(false);
+  }
 
   async function submitChatPrompt(prompt: string, images: ImageUrl[] = []) {
     if (!prompt.length || activeRequest.current) {
@@ -100,7 +110,7 @@ export default function useChat() {
           Accept: 'text/event-stream',
         },
         openWhenHidden: true,
-        body: JSON.stringify({ model: 'gpt-4-vision-preview', messages: messagesInput }),
+        body: JSON.stringify({ messages: messagesInput }),
         onopen: async (response) => {
           if (!isActive()) return;
           if (response.ok && response.headers.get('content-type') === EventStreamContentType) {
@@ -177,6 +187,7 @@ export default function useChat() {
     submittingPrompt,
     isAwaitingChatResponse: submittingPrompt && !messages[messages.length - 1]?.content,
     submitChatPrompt,
+    reset,
     addImageUrl: (image: ImageUrl) => setImageUrls((current) => [...current, image]),
     clearImageUrls: () => setImageUrls([]),
   };
