@@ -6,8 +6,8 @@ proxies streaming completions to the OpenAI API.
 ## Setup
 
 Use Node **22.22.2+ (22.x)**, **24.15.0+ (24.x)**, or **26.x**, with npm **10+**.
-Node 24 LTS is recommended. Install Node.js and npm if needed, then check your versions
-and install the project dependencies:
+Install Node.js and npm if needed, then check your versions and install the project
+dependencies:
 
 ```sh
 node --version
