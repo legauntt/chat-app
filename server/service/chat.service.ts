@@ -84,7 +84,7 @@ export class ChatService {
       }
 
       for await (const token of await this.streamChatCompletion(chatCompletionRequest)) {
-        res.sse.push({ text: token });
+        res.sse.push({ token });
       }
 
       res.sse.push({ success: true });
