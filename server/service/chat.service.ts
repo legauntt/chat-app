@@ -3,52 +3,12 @@ import OpenAI from 'openai';
 import PromptInput from '../schema/PromptInput';
 import { ChatCompletionChunk, ChatCompletionCreateParamsStreaming } from 'openai/resources/chat';
 import { Completion, CompletionCreateParamsStreaming } from 'openai/resources';
-import { encoding_for_model } from 'tiktoken';
 import { Response } from 'express';
 import { Stream } from 'openai/streaming';
 
 const openai = new OpenAI({
   apiKey: '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',
 });
-
-const TEMPERATURE = 0;
-const TOKEN_COUNT_BUFFER = 100;
-
-function getMaxTokenFromModel(model: ChatModel) {
-  switch (model) {
-    case ChatModel.Gpt41106:
-    case ChatModel.Gpt4Vision:
-      return 128000;
-    case ChatModel.Gpt4:
-      return 8192;
-    case ChatModel.Gpt432k:
-      return 32768;
-    case ChatModel.Gpt40613:
-      return 8192;
-    case ChatModel.GptTurbo:
-      return 4096;
-    case ChatModel.GptTurbo16k:
-      return 16384;
-    default:
-      return 2049;
-  }
-}
-
-function getNumberOfTokens(text: string, model: ChatModel) {
-  try {
-    // tiktoken library forgot to add encoding for gpt-4-0613 so hacking for now
-    if (model === ChatModel.Gpt40613) {
-      model = ChatModel.Gpt4;
-    }
-    const encoding = encoding_for_model(model as any);
-    const tokens = encoding.encode(text);
-    encoding.free();
-    return tokens.length;
-  } catch (error) {
-    console.log(`Unable to get number of tokens: ${error}`);
-    return text.length / 6;
-  }
-}
 
 function generatePrompt(prompt: string, context?: string, topic?: string) {
   const promptTopic = topic ? `The topic of the following response is "${topic}". ` : '';
@@ -63,24 +23,7 @@ export class ChatService {
   public static async enhance(userId: string, companyId: string, input: PromptInput) {
     try {
       const prompt = generatePrompt(input.prompt, input.prompt_context, input.topic);
-      const numPromptTokens = getNumberOfTokens(prompt, input.model as ChatModel);
-      const maxTokens = parseInt(
-        (getMaxTokenFromModel(input.model as ChatModel) - numPromptTokens).toString()
-      );
-
-      if (maxTokens < 0) {
-        return {
-          text: 'Prompt is too long. Please shorten the prompt or try a higher model.',
-          created_by_id: userId,
-          created_at: new Date(),
-        };
-      }
-
-      const openaiModelInput = {
-        model: input.model || ChatModel.GptTurbo,
-        temperature: TEMPERATURE,
-        max_tokens: maxTokens - TOKEN_COUNT_BUFFER,
-      };
+      const openaiModelInput = { model: input.model || ChatModel.GptTurbo };
 
       let response: string;
       const chatCompletion = await openai.chat.completions.create({
@@ -123,7 +66,7 @@ export class ChatService {
       throw new Error('Prompt or context is required.');
     }
 
-    const model = (input.model as ChatModel) || ChatModel.GptTurbo;
+    const model = input.model || ChatModel.GptTurbo;
 
     try {
       let messages = input.messages;
@@ -132,32 +75,7 @@ export class ChatService {
         messages = [{ role: 'user', content: prompt }];
       }
 
-      let text = '';
-      for (const message of messages) {
-        text += `${message.content}\n`;
-      }
-
-      if (input.functions) {
-        for (const func of input.functions) {
-          text += JSON.stringify(func);
-        }
-      }
-
-      const numPromptTokens = getNumberOfTokens(text, model);
-      const maxTokens = [ChatModel.Gpt41106, ChatModel.Gpt4Vision].includes(model)
-        ? 4096
-        : parseInt((getMaxTokenFromModel(model) - numPromptTokens).toString());
-
-      if (maxTokens < 0) {
-        throw new Error('Content is too long. Please shorten the content or try a higher model.');
-      }
-
-      const chatCompletionRequest = {
-        model,
-        temperature: TEMPERATURE,
-        max_tokens: maxTokens - TOKEN_COUNT_BUFFER,
-        messages,
-      } as any;
+      const chatCompletionRequest = { model, messages } as any;
       if (input.functions) {
         chatCompletionRequest.functions = input.functions;
       }
@@ -166,7 +84,7 @@ export class ChatService {
       }
 
       for await (const token of await this.streamChatCompletion(chatCompletionRequest)) {
-        res.sse.push({ token });
+        res.sse.push({ text: token });
       }
 
       res.sse.push({ success: true });

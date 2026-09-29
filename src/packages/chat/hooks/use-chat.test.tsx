@@ -60,6 +60,75 @@ describe('useChat', () => {
     expect(result.current.messages[1].content).toBe('first');
   });
 
+  it('resets a completed conversation and draft images to a fresh greeting', async () => {
+    const { result } = renderHook(() => useChat());
+    const greeting = result.current.messages[0];
+    act(() => {
+      void result.current.submitChatPrompt('old conversation');
+    });
+    await act(async () => {
+      latestRequest().onmessage!(streamMessage({ text: 'old reply', success: true }));
+    });
+    act(() => result.current.addImageUrl({ id: '1', url: 'data:image/png;base64,abc' }));
+    act(() => result.current.reset());
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0]).toMatchObject({
+      role: greeting.role,
+      content: greeting.content,
+    });
+    expect(result.current.messages[0]).not.toBe(greeting);
+    expect(result.current.imageUrls).toEqual([]);
+    expect(result.current.submittingPrompt).toBe(false);
+    expect(result.current.isAwaitingChatResponse).toBe(false);
+
+    act(() => result.current.reset());
+    expect(result.current.messages).toHaveLength(1);
+    act(() => { void result.current.submitChatPrompt('fresh conversation'); });
+    expect(JSON.parse(latestRequest().body as string).messages).toEqual([
+      expect.objectContaining({ role: 'system' }),
+      { role: greeting.role, content: greeting.content },
+      { role: 'user', content: 'fresh conversation' },
+    ]);
+  });
+
+  it.each(['resolve', 'reject'])('ignores old stream events and late %s after reset', async (outcome) => {
+    let finishRequest!: () => void;
+    vi.mocked(fetchEventSource).mockImplementationOnce(
+      () => new Promise<void>((resolve, reject) => {
+        finishRequest = () => outcome === 'resolve' ? resolve() : reject(new Error('late failure'));
+      })
+    );
+    const { result } = renderHook(() => useChat());
+    act(() => { void result.current.submitChatPrompt('old request'); });
+    const oldOptions = latestRequest();
+    act(() => oldOptions.onmessage!(streamMessage({ text: 'partial reply' })));
+    act(() => result.current.reset());
+    expect(oldOptions.signal!.aborted).toBe(true);
+    expect(result.current.submittingPrompt).toBe(false);
+    act(() => { void result.current.submitChatPrompt('new request'); });
+    const newOptions = latestRequest();
+
+    await act(async () => {
+      await oldOptions.onopen!(response());
+      oldOptions.onmessage!(streamMessage({ text: 'stale reply', success: true }));
+      oldOptions.onmessage!(streamMessage({ statusCode: 400, error: 'late error' }, 'error'));
+      oldOptions.onclose!();
+      expect(() => oldOptions.onerror!(new Error('late retry'))).toThrow('late retry');
+      finishRequest();
+    });
+    expect(result.current.messages).toHaveLength(3);
+    expect(result.current.messages[1].content).toBe('new request');
+    expect(result.current.messages[2].content).toBe('');
+    expect(result.current.submittingPrompt).toBe(true);
+    expect(newOptions.signal!.aborted).toBe(false);
+    expect(antmessage.error).not.toHaveBeenCalled();
+    await act(async () => {
+      newOptions.onmessage!(streamMessage({ text: 'fresh reply', success: true }));
+    });
+    expect(result.current.messages[2].content).toBe('fresh reply');
+    expect(result.current.submittingPrompt).toBe(false);
+  });
+
   it('preserves the multimodal request when draft images are cleared after sending', () => {
     const { result } = renderHook(() => useChat());
     const image = { id: '1', url: 'data:image/png;base64,abc' };
